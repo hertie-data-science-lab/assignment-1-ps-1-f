@@ -41,20 +41,30 @@ class Network():
 
     def _forward_pass(self, x_train):
         '''
-        TODO: Implement the forward propagation algorithm.
-
+        Implement the forward propagation algorithm.
         The method should return the output of the network.
         '''
-        pass
+        # 1. Input to hidden 1: weight and activation (sigmoid)
+        z1 = np.dot(self.params['W1'], x_train)
+        a1 = self.activation_func(z1)
+
+        # 2. Hidden 1 to hidden 2: weight and activation (sigmoid)
+        z2 = np.dot(self.params['W2'], a1)
+        a2 = self.activation_func(z2)
+
+        # 3. Hidden 2 to output (softmax)
+        z_out = np.dot(self.params['W3'], a2)
+        a_out = self.output_func(z_out)
+
+        return a_out
 
 
     def _backward_pass(self, y_train, output):
         '''
         TODO: Implement the backpropagation algorithm responsible for updating the weights of the neural network.
-
+        
         The method should return a dictionary of the weight gradients which are used to update the weights in self._update_weights().
-
-        '''
+        '''  
         pass
 
 
