@@ -3,6 +3,9 @@ import numpy as np
 import scratch.utils as utils
 from scratch.lr_scheduler import cosine_annealing
 
+# Added import: Pandas just for easier data collection for plotting
+import pandas as pd
+
 
 class Network():
     def __init__(self, sizes, epochs=50, learning_rate=0.01, random_state=1):
@@ -123,6 +126,9 @@ class Network():
             f'Training Accuracy: {train_accuracy * 100:.2f}%, ' \
             f'Validation Accuracy: {val_accuracy * 100:.2f}%'
             )
+        
+        #ADD: return accuracy scores tuple for plotting
+        return (iteration, train_accuracy, val_accuracy)
 
 
     def compute_accuracy(self, x_val, y_val):
@@ -149,14 +155,19 @@ class Network():
 
         start_time = time.time()
 
+        #ADD: setup data structure to save accuracies as we fit the networks
+        plotting_data = []
+
         for iteration in range(self.epochs):
             for x, y in zip(x_train, y_train):
                 
                 if cosine_annealing_lr:
                     learning_rate = cosine_annealing(self.learning_rate, 
                                                      iteration, 
-                                                     len(x_train), 
-                                                     self.learning_rate)
+                                                     #len(x_train),
+                                                     self.epochs, #CHANGE: max epochs in this run
+                                                     #self.learning_rate) 
+                                                     self.learning_rate/10) #CHANGE: 10x lower than starting rate
                 else: 
                     learning_rate = self.learning_rate
                 output = self._forward_pass(x)
@@ -164,4 +175,9 @@ class Network():
                 
                 self._update_weights(weights_gradient, learning_rate=learning_rate)
 
-            self._print_learning_progress(start_time, iteration, x_train, y_train, x_val, y_val)
+            print_out = self._print_learning_progress(start_time, iteration, x_train, y_train, x_val, y_val)
+            plotting_data.append(print_out + (learning_rate,))
+
+        #ADD: return collected data as DataFrame
+        plot_df = pd.DataFrame(plotting_data, columns=['epoch', 'training', 'validation', 'learning_rate'])
+        return plot_df
