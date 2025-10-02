@@ -62,9 +62,9 @@ class Network():
     def _backward_pass(self, y_train, output):
         '''
         TODO: Implement the backpropagation algorithm responsible for updating the weights of the neural network.
-        
         The method should return a dictionary of the weight gradients which are used to update the weights in self._update_weights().
         '''  
+       
         pass
 
 
@@ -100,8 +100,10 @@ class Network():
         DONE: Implement the prediction making of the network.
         The method should return the index of the most likeliest output class.
         '''
-        y_hat = np.argmax(x) #returns only the first index if there are exact ties (checked!)
-        return y_hat
+        #run forward pass to get the softmax output
+        output = self._forward_pass(x)
+        
+        return np.argmax(output) #output "prediction" (returns only first index in case of ties!)
 
     def fit(self, x_train, y_train, x_val, y_val, cosine_annealing_lr=False):
 
