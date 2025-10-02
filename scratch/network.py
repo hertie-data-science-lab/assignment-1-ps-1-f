@@ -41,22 +41,22 @@ class Network():
 
     def _forward_pass(self, x_train):
         '''
-        Implement the forward propagation algorithm.
+        DONE: Implement the forward propagation algorithm.
         The method should return the output of the network.
         '''
-        # 1. Input to hidden 1: weight and activation (sigmoid)
-        z1 = np.dot(self.params['W1'], x_train)
-        a1 = self.activation_func(z1)
+        # 1. Input to hidden 1
+        a1 = self.params['W1'] @ x_train #weighted sum = W1@X (no bias!)
+        h1 = self.activation_func(a1) #sigmoid activation: h1i ∈ (0,1)
 
-        # 2. Hidden 1 to hidden 2: weight and activation (sigmoid)
-        z2 = np.dot(self.params['W2'], a1)
-        a2 = self.activation_func(z2)
+        # 2. Hidden 1 to hidden 2
+        a2 = self.params['W2'] @ h1 #weighted sum
+        h2 = self.activation_func(a2) #sigmoid
 
-        # 3. Hidden 2 to output (softmax)
-        z_out = np.dot(self.params['W3'], a2)
-        a_out = self.output_func(z_out)
+        # 3. Hidden 2 to output activation
+        a3 = self.params['W3'] @ a2 #weighted sum
+        output = self.output_func(a3) #softmax activation: sum(output) = 1.0
 
-        return a_out
+        return output
 
 
     def _backward_pass(self, y_train, output):
@@ -97,12 +97,11 @@ class Network():
 
     def predict(self, x):
         '''
-        TODO: Implement the prediction making of the network.
+        DONE: Implement the prediction making of the network.
         The method should return the index of the most likeliest output class.
         '''
-        pass
-
-
+        y_hat = np.argmax(x) #returns only the first index if there are exact ties (checked!)
+        return y_hat
 
     def fit(self, x_train, y_train, x_val, y_val, cosine_annealing_lr=False):
 
