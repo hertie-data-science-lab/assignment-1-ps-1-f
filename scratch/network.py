@@ -3,6 +3,9 @@ import numpy as np
 import scratch.utils as utils
 from scratch.lr_scheduler import cosine_annealing
 
+# Added import: Pandas just for easier data collection for plotting
+import pandas as pd
+
 
 class Network():
     def __init__(self, sizes, epochs=50, learning_rate=0.01, random_state=1):
@@ -19,6 +22,14 @@ class Network():
         self.cost_func_deriv = utils.mse_deriv
 
         self.params = self._initialize_weights()
+
+        #ADD: need to cache hidden layer inputs and outputs for backprop
+        self.a3 = np.zeros(self.sizes[3])
+        self.h2 = np.zeros(self.sizes[2])
+        self.a2 = np.zeros(self.sizes[2])
+        self.h1 = np.zeros(self.sizes[1])
+        self.a1 = np.zeros(self.sizes[1])
+        self.x = np.zeros(self.sizes[0])
 
 
     def _initialize_weights(self):
@@ -41,28 +52,69 @@ class Network():
 
     def _forward_pass(self, x_train):
         '''
-        TODO: Implement the forward propagation algorithm.
-
+        DONE: Implement the forward propagation algorithm.
         The method should return the output of the network.
         '''
-        pass
+        # Save x_train for backprop
+        self.x = x_train
+        
+        # 1. Input to hidden 1
+        self.a1 = self.params['W1'] @ x_train #weighted sum = W1@X (no bias!)
+        self.h1 = self.activation_func(self.a1) #sigmoid activation: h1i ∈ (0,1)
+
+        # 2. Hidden 1 to hidden 2
+        self.a2 = self.params['W2'] @ self.h1 #weighted sum
+        self.h2 = self.activation_func(self.a2) #sigmoid
+
+        # 3. Hidden 2 to output activation
+        self.a3 = self.params['W3'] @ self.h2 #weighted sum
+        output = self.output_func(self.a3) #softmax output: sum(output) = 1.0
+
+        return output
 
 
     def _backward_pass(self, y_train, output):
         '''
-        TODO: Implement the backpropagation algorithm responsible for updating the weights of the neural network.
-
+        DONE: Implement the backpropagation algorithm responsible for updating the weights of the neural network.
         The method should return a dictionary of the weight gradients which are used to update the weights in self._update_weights().
+        '''  
+        # Count backwards! all derivative variables are dL/...
+        
+        # 3. Loss to output to hidden 2 weights
+        dy = self.cost_func_deriv(y_train, output) # (sizes[3],) #mse loss
+        da3 = dy * self.output_func_deriv(self.a3) # (sizes[3],) #softmax output
+        dw3 = da3[:, np.newaxis] @ self.h2[np.newaxis, :] # (sizes[3], sizes[2]) #weighted sum
+        
+        # 2. Hidden 2 to hidden 1 weights
+        dh2 = da3 @ self.params['W3'] # (sizes[2],) #weighted sum
+        da2 = dh2 * self.activation_func_deriv(self.a2) # (sizes[2],) #sigmoid
+        dw2 = da2[:, np.newaxis] @ self.h1[np.newaxis, :] # (sizes[2], sizes[1]) #weighted sum
 
-        '''
-        pass
+        # 1. Hidden 1 to input weights
+        dh1 = da2 @ self.params['W2'] # (sizes[1],) #weighted sum
+        da1 = dh1 * self.activation_func_deriv(self.a1) # (sizes[1],) #sigmoid
+        dw1 = da1[:, np.newaxis] @ self.x[np.newaxis, :] # (sizes[1], sizes[0]) #weighted sum
+
+        # Create gradient: all of the partial derivatives to update weights
+        weights_gradient = {
+            'dW1': dw1,
+            'dW2': dw2,
+            'dW3': dw3,
+        }
+        
+        return weights_gradient
 
 
     def _update_weights(self, weights_gradient, learning_rate):
         '''
-        TODO: Update the network weights according to stochastic gradient descent.
+        DONE: Update the network weights according to stochastic gradient descent.
         '''
-        pass
+        # Update each set of weights by its negative gradient * learning_rate
+        self.params['W1'] -= learning_rate * weights_gradient['dW1']
+        self.params['W2'] -= learning_rate * weights_gradient['dW2']
+        self.params['W3'] -= learning_rate * weights_gradient['dW3']
+        
+        return None
 
 
     def _print_learning_progress(self, start_time, iteration, x_train, y_train, x_val, y_val):
@@ -74,6 +126,9 @@ class Network():
             f'Training Accuracy: {train_accuracy * 100:.2f}%, ' \
             f'Validation Accuracy: {val_accuracy * 100:.2f}%'
             )
+        
+        #ADD: return accuracy scores tuple for plotting
+        return (iteration, train_accuracy, val_accuracy)
 
 
     def compute_accuracy(self, x_val, y_val):
@@ -87,16 +142,21 @@ class Network():
 
     def predict(self, x):
         '''
-        TODO: Implement the prediction making of the network.
+        DONE: Implement the prediction making of the network.
         The method should return the index of the most likeliest output class.
         '''
-        pass
+        #run forward pass to get the softmax output
+        output = self._forward_pass(x)
 
-
+        #output "prediction" (returns only first index of largest value in case of ties!)
+        return np.argmax(output)
 
     def fit(self, x_train, y_train, x_val, y_val, cosine_annealing_lr=False):
 
         start_time = time.time()
+
+        #ADD: setup data structure to save accuracies as we fit the networks
+        plotting_data = []
 
         for iteration in range(self.epochs):
             for x, y in zip(x_train, y_train):
@@ -104,8 +164,10 @@ class Network():
                 if cosine_annealing_lr:
                     learning_rate = cosine_annealing(self.learning_rate, 
                                                      iteration, 
-                                                     len(x_train), 
-                                                     self.learning_rate)
+                                                     #len(x_train),
+                                                     self.epochs, #CHANGE: max epochs in this run
+                                                     #self.learning_rate) 
+                                                     self.learning_rate/10) #CHANGE: 10x lower than starting rate
                 else: 
                     learning_rate = self.learning_rate
                 output = self._forward_pass(x)
@@ -113,4 +175,9 @@ class Network():
                 
                 self._update_weights(weights_gradient, learning_rate=learning_rate)
 
-            self._print_learning_progress(start_time, iteration, x_train, y_train, x_val, y_val)
+            print_out = self._print_learning_progress(start_time, iteration, x_train, y_train, x_val, y_val)
+            plotting_data.append(print_out + (learning_rate,))
+
+        #ADD: return collected data as DataFrame
+        plot_df = pd.DataFrame(plotting_data, columns=['epoch', 'training', 'validation', 'learning_rate'])
+        return plot_df
