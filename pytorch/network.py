@@ -3,6 +3,7 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import pandas as pd
 
 '''
 Problem set up: We have images in greyscale that have a pixel resolution of 28x28.
@@ -105,24 +106,35 @@ class TorchNetwork(nn.Module):
         x = self._flatten(x)
         with torch.no_grad():
             prob = self._forward_pass(x)
-        predictions = torch.argmax(prob)
+        predictions = torch.argmax(prob, dim=1)
         return predictions
 
     def fit(self, train_loader, val_loader):
         start_time = time.time()
+        history = []
 
         for iteration in range(self.epochs):
+            # Training loop
             for x, y in train_loader:
                 x = self._flatten(x)
                 y = nn.functional.one_hot(y, 10)
                 self.optimizer.zero_grad()
 
-
                 output = self._forward_pass(x)
                 self._backward_pass(y, output)
                 self._update_weights()
 
+            # Training metrics
+            train_acc = self.compute_accuracy(train_loader).item()
+            val_acc = self.compute_accuracy(val_loader).item()
+            lr = self.optimizer.param_groups[0]["lr"]
+
+            history.append([iteration + 1, train_acc, val_acc, lr])
+
             self._print_learning_progress(start_time, iteration, train_loader, val_loader)
+        
+        torch_df = pd.DataFrame(history, columns=['epoch', 'training', 'validation', 'learning_rate'])
+        return torch_df
 
     def compute_accuracy(self, data_loader):
         correct = 0
