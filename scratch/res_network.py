@@ -16,7 +16,7 @@ class ResNetwork(Network):
             sizes=sizes,
             epochs=epochs,
             learning_rate=learning_rate,
-            random_state=learning_rate
+            random_state=random_state
             )
         
         if len(sizes) < 4:

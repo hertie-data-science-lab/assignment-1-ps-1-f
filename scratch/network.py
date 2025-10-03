@@ -117,16 +117,16 @@ class Network():
         return None
 
 
-    def _print_learning_progress(self, start_time, iteration, x_train, y_train, x_val, y_val):
+    def _print_learning_progress(self, start_time, iteration, x_train, y_train, x_val, y_val, print_bool):
         train_accuracy = self.compute_accuracy(x_train, y_train)
         val_accuracy = self.compute_accuracy(x_val, y_val)
-        print(
-            f'Epoch: {iteration + 1}, ' \
-            f'Training Time: {time.time() - start_time:.2f}s, ' \
-            f'Training Accuracy: {train_accuracy * 100:.2f}%, ' \
-            f'Validation Accuracy: {val_accuracy * 100:.2f}%'
-            )
-        
+        if print_bool:
+            print(
+                f'Epoch: {iteration + 1}, ' \
+                f'Training Time: {time.time() - start_time:.2f}s, ' \
+                f'Training Accuracy: {train_accuracy * 100:.2f}%, ' \
+                f'Validation Accuracy: {val_accuracy * 100:.2f}%'
+                )
         #ADD: return accuracy scores tuple for plotting
         return (iteration, train_accuracy, val_accuracy)
 
@@ -151,7 +151,7 @@ class Network():
         #output "prediction" (returns only first index of largest value in case of ties!)
         return np.argmax(output)
 
-    def fit(self, x_train, y_train, x_val, y_val, cosine_annealing_lr=False):
+    def fit(self, x_train, y_train, x_val, y_val, cosine_annealing_lr=False, print_bool=True):
 
         start_time = time.time()
 
@@ -175,7 +175,7 @@ class Network():
                 
                 self._update_weights(weights_gradient, learning_rate=learning_rate)
 
-            print_out = self._print_learning_progress(start_time, iteration, x_train, y_train, x_val, y_val)
+            print_out = self._print_learning_progress(start_time, iteration, x_train, y_train, x_val, y_val, print_bool)
             plotting_data.append(print_out + (learning_rate,))
 
         #ADD: return collected data as DataFrame

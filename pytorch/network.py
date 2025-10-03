@@ -86,15 +86,16 @@ class TorchNetwork(nn.Module):
     def _flatten(self, x):
         return x.view(x.size(0), -1)       
 
-    def _print_learning_progress(self, start_time, iteration, train_loader, val_loader):
+    def _print_learning_progress(self, start_time, iteration, train_loader, val_loader, print_bool):
         train_accuracy = self.compute_accuracy(train_loader)
         val_accuracy = self.compute_accuracy(val_loader)
-        print(
-            f'Epoch: {iteration + 1}, ' \
-            f'Training Time: {time.time() - start_time:.2f}s, ' \
-            f'Learning Rate: {self.optimizer.param_groups[0]["lr"]}, ' \
-            f'Training Accuracy: {train_accuracy * 100:.2f}%, ' \
-            f'Validation Accuracy: {val_accuracy * 100:.2f}%'
+        if print_bool:
+            print(
+                f'Epoch: {iteration + 1}, ' \
+                f'Training Time: {time.time() - start_time:.2f}s, ' \
+                f'Learning Rate: {self.optimizer.param_groups[0]["lr"]}, ' \
+                f'Training Accuracy: {train_accuracy * 100:.2f}%, ' \
+                f'Validation Accuracy: {val_accuracy * 100:.2f}%'
             )
 
     '''
@@ -109,7 +110,7 @@ class TorchNetwork(nn.Module):
         predictions = torch.argmax(prob, dim=1)
         return predictions
 
-    def fit(self, train_loader, val_loader):
+    def fit(self, train_loader, val_loader, print_bool=True):
         start_time = time.time()
         history = []
 
@@ -131,7 +132,7 @@ class TorchNetwork(nn.Module):
 
             history.append([iteration + 1, train_acc, val_acc, lr])
 
-            self._print_learning_progress(start_time, iteration, train_loader, val_loader)
+            self._print_learning_progress(start_time, iteration, train_loader, val_loader, print_bool)
         
         torch_df = pd.DataFrame(history, columns=['epoch', 'training', 'validation', 'learning_rate'])
         return torch_df
